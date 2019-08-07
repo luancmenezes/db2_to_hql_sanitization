@@ -1,5 +1,7 @@
 import sqlparse
 import re
+import sys
+
 class Sanitization:
     def __init__(self,path):
         self.names = list()
@@ -90,8 +92,8 @@ class WriteFiles:
         
 
 
-def main():
-    s = Sanitization('create.ctr')
+def main(path):
+    s = Sanitization(path)
     tk = tokensUtils()
     _tb,_def,_db = s.parseTokens()
     w = WriteFiles(_def=s.ctr2def(_def),_tb=_tb,_db=_db)
@@ -109,8 +111,7 @@ def main():
     w._HQL(s,tk)
     w._write('def')
     w._write('hql')
-        # if sqlparse.keywords.KEYWORDS.get(x.get_name()) != None
-        #     value = x.get_name()
+     
 if __name__ == "__main__":
-    main()  
+    main(sys.argv[1])  
 			
