@@ -1,4 +1,5 @@
 import sqlparse
+import re
 class Sanitization:
     def __init__(self,path):
         self.names = list()
@@ -29,6 +30,7 @@ class Sanitization:
             self.types.append(_type)
         
 class tokensUtils:
+    global KEYWORDS_HQL 
     KEYWORDS_HQL = {
         'CHAR':'STRING',
         'VARCHAR':'STRING',
@@ -52,8 +54,17 @@ class tokensUtils:
         if token == 'DATE':
             return True
         return False
+    def parse_HQL(self,_keyword):
+        for key in self.keywords.keys():
+            _init = _keyword.find(key)
+            if _init > -1:
+                _keyword = re.sub(r'\([\d]*\)', '', _keyword)
+                # _key = _keyword[_init:len(key)]
+                return self.keywords[_keyword]
+            else:
+                return _keyword
 class WriteFiles:
-    def __init__(self,_def=None,hql=None):
+    def __init__(self,_def=None,hql=str()):
         self._def = _def
         self.hql = hql
     def _write(self,_type):
@@ -64,6 +75,12 @@ class WriteFiles:
         else:
             f.write(self.hql)
         f.close()
+    def _HQL(self,*args):
+        while args[0].names:
+            _hql = args[1].parse_HQL(args[0].types.pop())            
+            self.hql += args[0].names.pop() + ' ' + _hql + ',\n'
+        
+
 
 def main():
     s = Sanitization('create.ctr')
@@ -82,7 +99,8 @@ def main():
                 s.parse_identifier_list(token.value)
             else:
                 s.types.append(token.value)
-    print(s)
+    w._HQL(s,tk)
+    print(w.hql)
         # if sqlparse.keywords.KEYWORDS.get(x.get_name()) != None
         #     value = x.get_name()
 if __name__ == "__main__":
