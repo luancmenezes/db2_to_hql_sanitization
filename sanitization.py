@@ -10,31 +10,36 @@ class Sanitization:
     def ctr2def(self,token):
         return token.value[1:-1]
     def parseTokens(self):
-#         file_ = open(self.path, "r")
-        raw = path
+        file_ = open(self.path, "r")
+        raw = file_.read()
         parsed = sqlparse.parse(raw)[0]
         self.tokens = [sql for sql in parsed.tokens if sql.is_group]
         return self.extractTokens(self.tokens)
-    
-#     def parse_identifier_list(self,token):
-#     #     if is_identifier_list(token):
-
-
-    #sqlparse.keywords.KEYWORDS.get('REAL')
 class tokensUtils:
-    def is_identifier_list(token):
+    def is_identifier_list(self,token):
         return isinstance(token, sqlparse.sql.IdentifierList) 
 
-    def is_function(token):
+    def is_function(self,token):
         return isinstance(token, sqlparse.sql.Function) 
 
-    def is_identifier(token):
+    def is_identifier(self,token):
         return isinstance(token, sqlparse.sql.Identifier) 
+class WriteFiles:
+    def __init__(self,_def=None,hql=None):
+        self._def = _def
+        self.hql = hql
+    def _write(self,_type):
+        _file = "table.{}".format(_type)
+        f = open(_file, "w")
+        f.write(self._def)
+        f.close()
 
 def main():
     s = Sanitization('create.ctr')
     _tb,_def,_db = s.parseTokens()
-    #print(s.ctr2def(_def))
+    w = WriteFiles(s.ctr2def(_def))
+    w._write('def')
+        # print(s.ctr2def(_def))
     ## write def = 
 #     for token in _def.tokens:
 #         if token.is_group:
