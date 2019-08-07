@@ -64,17 +64,25 @@ class tokensUtils:
             else:
                 return _keyword
 class WriteFiles:
-    def __init__(self,_def=None,hql=str()):
+    global HQL_SCRIPT
+    
+    def __init__(self,_def=None,hql=str(),_tb=None,_db=None):
         self._def = _def
         self.hql = hql
+        self.tb = _tb
+        self.db = _db
     def _write(self,_type):
         _file = "table.{}".format(_type)
         f = open(_file, "w")
         if _type == 'def':
             f.write(self._def)
         else:
-            f.write(self.hql)
-        f.close()
+            HQL_SCRIPT = """CREATE EXTERNAL TABLE IF NOT EXISTS {}(\n{})\nCOMMENT 'Student Names'\nROW FORMAT DELIMITED\nFIELDS TERMINATED BY ','\nSTORED AS TEXTFILE\nLOCATION '/user/andrena';""".format(self.tb,self.hql)
+
+            _file = "table.{}".format(_type)
+            f = open(_file, "w")
+            f.write(HQL_SCRIPT)
+            f.close()
     def _HQL(self,*args):
         while args[0].names:
             _hql = args[1].parse_HQL(args[0].types.pop())            
@@ -86,8 +94,7 @@ def main():
     s = Sanitization('create.ctr')
     tk = tokensUtils()
     _tb,_def,_db = s.parseTokens()
-    w = WriteFiles(s.ctr2def(_def))
-    # w._write('def')
+    w = WriteFiles(_def=s.ctr2def(_def),_tb=_tb,_db=_db)
     ## write def = 
     for token in _def.tokens:
         if token.is_group or tk.is_date(token.value):
@@ -100,7 +107,8 @@ def main():
             else:
                 s.types.append(token.value)
     w._HQL(s,tk)
-    print(w.hql)
+    w._write('def')
+    w._write('hql')
         # if sqlparse.keywords.KEYWORDS.get(x.get_name()) != None
         #     value = x.get_name()
 if __name__ == "__main__":
