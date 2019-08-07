@@ -15,7 +15,27 @@ class Sanitization:
         parsed = sqlparse.parse(raw)[0]
         self.tokens = [sql for sql in parsed.tokens if sql.is_group]
         return self.extractTokens(self.tokens)
+    def parse_identifier_list(self,token):
+        tk = tokensUtils()
+        token = token.split()
+        _type = sqlparse.keywords.KEYWORDS.get(token[0])
+        if tk.is_keyword(_type):
+            _token = token[-1].strip()
+            self.names.append(_token)
+        else:
+            _token = token[-1].strip()
+            _type =  token[0].strip()
+            self.names.append(_token)
+            self.types.append(_type)
+        
 class tokensUtils:
+    KEYWORDS_HQL = {
+        'CHAR':'STRING',
+        'VARCHAR':'STRING',
+        'DATE':'STRING'
+    }
+    def __init__(self):
+        self.keywords = KEYWORDS_HQL
     def is_identifier_list(self,token):
         return isinstance(token, sqlparse.sql.IdentifierList) 
 
@@ -23,7 +43,15 @@ class tokensUtils:
         return isinstance(token, sqlparse.sql.Function) 
 
     def is_identifier(self,token):
-        return isinstance(token, sqlparse.sql.Identifier) 
+        return isinstance(token, sqlparse.sql.Identifier)
+    def is_keyword(self,token):
+        if token == sqlparse.tokens.Keyword:
+            return True 
+        return False
+    def is_date(self, token):
+        if token == 'DATE':
+            return True
+        return False
 class WriteFiles:
     def __init__(self,_def=None,hql=None):
         self._def = _def
@@ -31,27 +59,32 @@ class WriteFiles:
     def _write(self,_type):
         _file = "table.{}".format(_type)
         f = open(_file, "w")
-        f.write(self._def)
+        if _type == 'def':
+            f.write(self._def)
+        else:
+            f.write(self.hql)
         f.close()
 
 def main():
     s = Sanitization('create.ctr')
+    tk = tokensUtils()
     _tb,_def,_db = s.parseTokens()
     w = WriteFiles(s.ctr2def(_def))
-    w._write('def')
-        # print(s.ctr2def(_def))
+    # w._write('def')
     ## write def = 
-#     for token in _def.tokens:
-#         if token.is_group:
-#             if tokensUtils.is_identifier(token):
-#                 x.names.append(token.value)
-#             elif tokensUtils.is_function(token):
-#                 x.types.append(token.value)
-#             else:
-#                 Sanitization.parse_identifier_list(token.value)
-    
-#         # if sqlparse.keywords.KEYWORDS.get(x.get_name()) != None
-#         #     value = x.get_name()
+    for token in _def.tokens:
+        if token.is_group or tk.is_date(token.value):
+            if tk.is_identifier(token):
+                s.names.append(token.value)
+            elif tk.is_function(token):
+                s.types.append(token.value)
+            elif tk.is_identifier_list(token):
+                s.parse_identifier_list(token.value)
+            else:
+                s.types.append(token.value)
+    print(s)
+        # if sqlparse.keywords.KEYWORDS.get(x.get_name()) != None
+        #     value = x.get_name()
 if __name__ == "__main__":
     main()  
 			
