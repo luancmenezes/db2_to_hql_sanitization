@@ -3,8 +3,6 @@ import re
 import sys
 from datetime import datetime
 
-
-
 class Sanitization:
     def __init__(self,path):
         self.names = list()
@@ -65,7 +63,6 @@ class tokensUtils:
             _init = _keyword.find(key)
             if _init > -1:
                 _keyword = re.sub(r'\([\d]*\)', '', _keyword)
-                # _key = _keyword[_init:len(key)]
                 try:
                     return self.keywords[_keyword]
                 except KeyError:
@@ -102,14 +99,11 @@ class WriteFiles:
     def _checkFile(self,path):
         return path.exists(path)
         
-
-
 def main(path):
     s = Sanitization(path)
     tk = tokensUtils()
     _tb,_def,_db = s.parseTokens()
     w = WriteFiles(_def=s.ctr2def(_def),_tb=_tb,_db=_db)
-    ## write def = 
     for token in _def.tokens:
         if token.is_group or tk.is_date(token.value):
             if tk.is_identifier(token):
