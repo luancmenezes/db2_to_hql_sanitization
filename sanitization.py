@@ -1,6 +1,9 @@
 import sqlparse
 import re
 import sys
+from datetime import datetime
+
+
 
 class Sanitization:
     def __init__(self,path):
@@ -9,7 +12,7 @@ class Sanitization:
         self.path = path
         self.tokens = list()
     def extractTokens(self,tokens):
-        return tokens[0].value,tokens[1],tokens[2].value
+        return tokens[0].value,tokens[1],None
     def ctr2def(self,token):
         return token.value[1:-1]
     def parseTokens(self):
@@ -34,9 +37,10 @@ class Sanitization:
 class tokensUtils:
     global KEYWORDS_HQL 
     KEYWORDS_HQL = {
-        'CHAR':'STRING',
-        'VARCHAR':'STRING',
-        'DATE':'STRING'
+        'CHAR':'string',
+        'VARCHAR':'string',
+        'DATE':'string',
+        'CHARACTER':'string'
     }
     def __init__(self):
         self.keywords = KEYWORDS_HQL
@@ -62,7 +66,11 @@ class tokensUtils:
             if _init > -1:
                 _keyword = re.sub(r'\([\d]*\)', '', _keyword)
                 # _key = _keyword[_init:len(key)]
-                return self.keywords[_keyword]
+                try:
+                    return self.keywords[_keyword]
+                except KeyError:
+                    print('Error: _keyword - {} not defined'.format(_keyword))
+                    exit()
             else:
                 return _keyword
 class WriteFiles:
@@ -74,14 +82,16 @@ class WriteFiles:
         self.tb = _tb
         self.db = _db
     def _write(self,_type):
-        _file = "table.{}".format(_type)
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        _file = "table_{}.{}".format(current_time,_type)
         f = open(_file, "w")
         if _type == 'def':
             f.write(self._def)
+            f.close()
         else:
-            HQL_SCRIPT = """CREATE EXTERNAL TABLE IF NOT EXISTS {}(\n{})\nCOMMENT 'Student Names'\nROW FORMAT DELIMITED\nFIELDS TERMINATED BY ','\nSTORED AS TEXTFILE\nLOCATION '/user/andrena';""".format(self.tb,self.hql)
-
-            _file = "table.{}".format(_type)
+            HQL_SCRIPT = """CREATE EXTERNAL TABLE IF NOT EXISTS {}(\n{}),\n PARTITIONED BY (\n dat_ref_carga string\n),\nROW FORMAT SERDE\n'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'\nSTORED As INPUTFORMAT\n 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat'\nOUTPUTFORMAT\n'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat'\nTBLPROPERTIES ('parquet.compression'='SNAPPY'),;""".format(self.tb,self.hql)
+            _file = "table_{}.{}".format(current_time,_type)
             f = open(_file, "w")
             f.write(HQL_SCRIPT)
             f.close()
@@ -89,6 +99,8 @@ class WriteFiles:
         while args[0].names:
             _hql = args[1].parse_HQL(args[0].types.pop())            
             self.hql += args[0].names.pop() + ' ' + _hql + ',\n'
+    def _checkFile(self,path):
+        return path.exists(path)
         
 
 
@@ -113,5 +125,5 @@ def main(path):
     w._write('hql')
      
 if __name__ == "__main__":
-    main(sys.argv[1])  
+    [main(ctr) for ctr in sys.argv[1:]]  
 			
