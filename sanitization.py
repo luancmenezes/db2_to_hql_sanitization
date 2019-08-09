@@ -1,6 +1,7 @@
 import sqlparse
 import re
 import sys
+import os
 from datetime import datetime
 
 class Sanitization:
@@ -31,6 +32,24 @@ class Sanitization:
             _type =  token[0].strip()
             self.names.append(_token)
             self.types.append(_type)
+
+class Sanitization_2:
+    def __init__(self,path):
+        self.db = list()
+        self.tb = list()
+        self.retention = list()
+        self.label = 'PROCESSAR'
+        self.path = path
+    def extractTokens(self,tokens):
+        if tokens[3].strip() == self.label:
+            self.db.append(tokens[0].upper())
+            self.tb.append(tokens[1].upper())
+            self.retention.append(tokens[2])
+    def parseTokens(self):
+        file_ = open(self.path, "r")
+        for line in file_.readlines():
+            self.extractTokens(line.split(';'))
+
         
 class tokensUtils:
     global KEYWORDS_HQL 
@@ -99,7 +118,7 @@ class WriteFiles:
     def _checkFile(self,path):
         return path.exists(path)
         
-def main(path):
+def main_d_h(path):
     s = Sanitization(path)
     tk = tokensUtils()
     _tb,_def,_db = s.parseTokens()
@@ -117,7 +136,42 @@ def main(path):
     w._HQL(s,tk)
     w._write('def')
     w._write('hql')
-     
+def main_c(path):
+    s = Sanitization_2(path)
+    s.parseTokens()
+    listOfLines = list()
+    while s.db:
+        database = s.db.pop()
+        tabela = s.tb.pop()
+        retention = s.retention.pop()
+        input_create = "/sistemas/bdi/" + database + "/" + tabela + "/INPUT/"
+        input_create = input_create.split('\n')
+        input_create = ''.join(input_create)
+        parquet_create = "/sistemas/bdi/" + database + "/" + tabela + "/parquet/"
+        parquet_create = parquet_create.split('\n')
+        parquet_create = ''.join(parquet_create)
+        cfg_create = "/sistemas/bdf/" + database + "/cfg/"
+        cfg_create = cfg_create.split('\n')
+        cfg_create = ''.join(cfg_create)
+        listOfLines.extend((input_create, parquet_create, cfg_create))
+        fileName = tabela + '.conf'
+        fileName = fileName.split('\n')
+        fileName = ''.join(fileName)
+        with open ('output/'fileName, 'w') as conf:
+            conf.write("retention="+retention+'\n')
+            conf.write("hdfs_path_source=" + input_create + '\n')
+            conf.write("hdfs_path_save=" + parquet_create + '\n')
+            conf.write("os_path_source=/produtos/bdr/mf/" + '\n')
+            conf.write("file_count=1\n")
+            conf.write("database=" + database + '\n')
+            conf.write('quote="\n')
+            conf.write("demiliter=;\n")
+            conf.write("header=false")
+
+
 if __name__ == "__main__":
-    [main(ctr) for ctr in sys.argv[1:]]  
+    if sys.argv[1] == 1:
+        [main_d_h(ctr) for ctr in sys.argv[2:]]
+    else:
+        main_c(sys.argv[2])
 			
