@@ -2,6 +2,8 @@ import sqlparse
 import re
 import sys
 import os
+import json
+
 from datetime import datetime
 
 class Sanitization:
@@ -61,6 +63,8 @@ class tokensUtils:
     }
     def __init__(self):
         self.keywords = KEYWORDS_HQL
+        self.datastore = dict()
+        self.list_datastore = None
     def is_identifier_list(self,token):
         return isinstance(token, sqlparse.sql.IdentifierList) 
 
@@ -77,6 +81,10 @@ class tokensUtils:
         if token == 'DATE':
             return True
         return False
+    # def there_is_keyword(self,_keyword,_dict):
+    #     if _keyword != _dict['keyword']:
+    #         return True
+    #     return False
     def parse_HQL(self,_keyword):
         for key in self.keywords.keys():
             _init = _keyword.find(key)
@@ -85,8 +93,16 @@ class tokensUtils:
                 try:
                     return self.keywords[_keyword]
                 except KeyError:
+                    # data['keyword'] = list()
                     print('Error: _keyword - {} not defined'.format(_keyword))
+                    with open('_keywords', 'rw') as f:
+                        self.datastore = json.loads(f.read())
+                        if not self.datastore.get(_keyword):
+                            self.datastore[_keyword] = True
+                            json.dump(self.datastore, f)
+                    f.close()
                     exit()
+                    ## Falta finalizar - Quando recebe keyWord como Execeção, altualmente para porém não Pode
             else:
                 return _keyword
 class WriteFiles:
