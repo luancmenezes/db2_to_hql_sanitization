@@ -155,7 +155,6 @@ def main_d_h(path):
     s = Sanitization(path)
     s.readCompilationCtr()
     tk = tokensUtils()
-    # try:
     while s.raw:
         _tb,_def,_db = s.parseTokens()
         w = WriteFiles(_def=s.ctr2def(_def),_tb=_tb,_db=_db)
@@ -172,9 +171,6 @@ def main_d_h(path):
         w._HQL(s,tk)
         w._write('def')
         w._write('hql')
-    # except AttributeError:
-    #     print("AttributeError: {}\n Remaining elements: {}".format(s.raw,len(s.raw)))
-
 def main_c(path):
     s = Sanitization_2(path)
     s.parseTokens()
@@ -215,9 +211,8 @@ def main_c(path):
 
 
 if __name__ == "__main__":
-    main_d_h('compilado_2.txt')
-    # if scys.argv[1] == '1':
-    #     main_d_h('compilado.txt')
-    # else:
-    #     main_c(sys.argv[2])
+    if scys.argv[1] == '1':
+        main_d_h(sys.argv[2])
+    else:
+        main_c(sys.argv[2])
 			
